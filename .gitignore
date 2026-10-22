@@ -1,0 +1,26 @@
+# Build artefacts
+build/
+dist/
+*.spec
+
+# Runtime output (regenerated per game)
+# `logs/*` (not `logs/`) so the negation below can re-include the placeholder.
+logs/*
+!logs/.gitkeep
+templates/
+
+# Local settings — path to Stockfish is machine-specific
+config.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
