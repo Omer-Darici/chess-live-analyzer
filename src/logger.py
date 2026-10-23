@@ -13,6 +13,7 @@ import chess
 import chess.pgn
 
 from . import config
+from .board_detect import position_key
 
 MOVE_WORDS = {
     chess.PAWN: "piyon", chess.KNIGHT: "at", chess.BISHOP: "fil",
@@ -197,14 +198,36 @@ class GameLogger:
         with self.path.open("a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
         self._entries.append(entry)
-        # Only extend the game when the move is actually played on board.
-        if board_before.fen() == self._board.fen():
-            try:
-                self._board.push(best)
-                self._moves.append(best.uci())
-            except Exception:
-                pass
+        self._absorb(board_before)
         return reason
+
+    def _absorb(self, board):
+        """Track the game from what was actually seen on screen.
+
+        The played move is *discovered*, not assumed. Pushing the engine's
+        recommended move — which is what this used to do — writes a PGN of
+        moves nobody played and diverges from the game the moment a player
+        chooses differently. Between two consecutive reads exactly one move
+        happened, so searching the tracked position's legal moves for the one
+        that reproduces the new board identifies what was really played.
+
+        A position with no connecting legal move means frames were missed (or
+        a frame slipped through); resync to what is on screen rather than
+        append a move that never happened.
+        """
+        if self._board is None:
+            self._board = board.copy()
+            return
+        if position_key(self._board) == position_key(board):
+            return
+        for mv in self._board.legal_moves:
+            probe = self._board.copy()
+            probe.push(mv)
+            if position_key(probe) == position_key(board):
+                self._moves.append(mv.uci())
+                self._board = probe
+                return
+        self._board = board.copy()
 
     def save(self, result="*"):
         """Write ``.md`` (Turkish) and ``.pgn``; returns the Markdown path."""

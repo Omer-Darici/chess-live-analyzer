@@ -427,7 +427,7 @@ class App(tk.Tk):
         if not n:
             self._set_status("Kalibrasyon başarısız — ızgarayı tahtaya hizalayın.", "error")
             return
-        self.calib_info.configure(text=f"✓ {n}/32 şablon öğrenildi", fg=config.ACCENT)
+        self.calib_info.configure(text=f"✓ {n}/12 taş şablonu öğrenildi", fg=config.ACCENT)
         if self.grid_preview_on:
             self.overlay.clear("g")
             self.grid_preview_on = False

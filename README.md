@@ -144,6 +144,10 @@ chess-live-analyzer/
 │  ├─ overlay.py        tıklanabilir, yarı saydam vurgu katmanı
 │  ├─ hotkeys.py        yeniden atanabilir klavye + fare
 │  └─ logger.py         JSONL / PGN / Markdown + Türkçe açıklama
+├─ tests/
+│  ├─ synth_board.py    gerçekçi sentetik tahta (yüzey/taş kontrastı)
+│  ├─ test_detect.py    tahta okuma birim testleri
+│  └─ test_flow.py      ekran→okuma→analiz→PGN uçtan uca testi
 ├─ logs/
 ├─ build.ps1            PyInstaller paketleme
 └─ README.md
@@ -152,10 +156,16 @@ chess-live-analyzer/
 ### Test
 
 ```
-python -m src.main --test
+python main.py --test          # motor + açıklama + kayıt duman testi
+python tests\test_detect.py    # tahta okuma (12 kontrol)
+python tests\test_flow.py      # uçtan uca akış (19 kontrol)
 ```
 
-Motor, açıklama üretimi ve kayıt yazma olmadan arayüz açar.
+`tests/` içindeki iki paket, ekran okumayı sentetik bir tahta üzerinden
+gerçek API ile sınırdan sınıra işletir: güven eşiği, rok haklarının geri
+üretilmesi, yan tarafın değişmesi, geçen alma (en passant), kaydın oynanan
+hamleleri değil motorun önerilerini değil kaydettiği ve PGN'in aynı oyunu
+oynatması.
 
 ---
 
@@ -163,6 +173,11 @@ Motor, açıklama üretimi ve kayıt yazma olmadan arayüz açar.
 
 * Kalibrasyon **başlangıç pozisyonu** ile yapılır; farklı bir FEN'den
   başlarken tahtayı o pozisyona getirip yeniden **Kalibre Et** deyin.
-* Tahta animasyonu sırasında alınan kareler tutarsızdır — motor bu kareleri
-  `min_confidence` eşiğiyle elemek için tasarlanmıştır.
+* **Yan taraf (sıra kimde) ekranda görünmez.** İlk okumada beyaz varsayılır;
+  bundan sonraki her hamle sırayı kendiliğinden çevirir. Sırası siyahla
+  başlayan bir oyunu, ilk konumu okuttuktan sonra bir hamle oynatın.
+* Tahta animasyonu sırasında alınan kareler tutarsızdır — bu kareler
+  `min_confidence` eşiğiyle elemek için tasarlanmıştır. Izgara tahtanın
+  dışına taştığında (bölge çok darsa) 64 karenin hepsi okunamaz ve program
+  sessizce yanlış okumak yerine "tutarsız" der.
 * Ses, görüntü kaydı, bulut senkronizasyonu yoktur. Her şey yerel çalışır.

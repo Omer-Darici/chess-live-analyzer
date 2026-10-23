@@ -7,6 +7,7 @@ import time
 import chess
 
 from . import config
+from .board_detect import apply_transition, position_key
 
 
 class Analyzer(threading.Thread):
@@ -26,7 +27,8 @@ class Analyzer(threading.Thread):
         self._stop = threading.Event()
         self._force = threading.Event()
         self.paused = False
-        self.last_fen = None
+        self.last_key = None
+        self._prev_board = None
         self.analysed = 0
         self.error = None
 
@@ -62,8 +64,13 @@ class Analyzer(threading.Thread):
             self.out.put({"kind": "detect", "status": "unsure", "conf": conf})
             return
 
+        # Neither side to move nor en passant is visible on screen; both come
+        # from how this position differs from the previous accepted one.
+        board = apply_transition(self._prev_board, board)
+        key = position_key(board)
         fen_key = board.fen()
-        changed = fen_key != self.last_fen
+
+        changed = key != self.last_key
         if not changed and not self._force.is_set():
             return
         self._force.clear()
@@ -75,7 +82,10 @@ class Analyzer(threading.Thread):
             return
 
         self.out.put({"kind": "detect", "status": "ok", "conf": conf, "fen": fen_key})
-        self.last_fen = fen_key
+        self.last_key = key
+        # Only once a read is trusted: a rejected frame must not become the
+        # reference the next transition is inferred from.
+        self._prev_board = board
 
         lines = self.engine.analyse(board)
         if not lines:
